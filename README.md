@@ -32,7 +32,7 @@ El PDF puede ir como `multipart/form-data` (campo `file`) o como body binario (`
 - **Runtime HTTP separado de la extracción:** Granian atiende HTTP y la extracción corre en un pool de `EXTRACT_WORKERS` procesos (`ProcessPoolExecutor`), así un PDF pesado no bloquea el event loop.
 - **Backpressure:** con `MAX_IN_FLIGHT` extracciones en curso, la siguiente recibe `503` con `Retry-After` al instante, en vez de esperar en una cola hasta vencer el timeout del cliente.
 - **Sin disco:** el PDF se procesa en memoria. El umbral de spool de Starlette se sube al tamaño máximo para que el multipart no se escriba en un archivo temporal.
-- **Markdown liviano:** `pymupdf4llm` sin motor de layout, sin OCR y sin detección de tablas ni gráficos vectoriales, que son lo más caro en CPU.
+- **Markdown liviano:** conversor propio (`app/data/extractors/markdown_writer.py`) que lee cada página una sola vez con `get_text("dict")`; el tamaño de letra con más texto es el cuerpo y los tres mayores pasan a ser títulos `#`, `##` y `###`. Reemplazó a `pymupdf4llm`, que tardaba unas 18 veces más porque arma el texto de cada página dos veces y detecta columnas, listas y tablas. No reconoce columnas, listas ni tablas.
 
 ## Arquitectura
 
@@ -70,7 +70,7 @@ Las pruebas de carga (k6 y Vegeta) están en `pdf-extractext-deploy/tests/stress
 
 ## Nota sobre licencias
 
-La extracción usa [PyMuPDF](https://github.com/pymupdf/PyMuPDF) y [pymupdf4llm](https://github.com/pymupdf/pymupdf4llm), que se distribuyen bajo **AGPL-3.0** (o licencia comercial de Artifex). Este repo es MIT, pero una imagen que incluye PyMuPDF queda alcanzada por la AGPL: si se distribuye o se ofrece como servicio, el código fuente tiene que estar disponible. Para un trabajo académico con repositorio público eso ya se cumple. Para un uso comercial habría que comprar la licencia de Artifex o cambiar a una librería con licencia permisiva (pypdfium2, pdfplumber), a costa de rendimiento y de la salida en Markdown.
+La extracción usa [PyMuPDF](https://github.com/pymupdf/PyMuPDF), que se distribuye bajo **AGPL-3.0** (o licencia comercial de Artifex). Este repo es MIT, pero una imagen que incluye PyMuPDF queda alcanzada por la AGPL: si se distribuye o se ofrece como servicio, el código fuente tiene que estar disponible. Para un trabajo académico con repositorio público eso ya se cumple. Para un uso comercial habría que comprar la licencia de Artifex o cambiar a una librería con licencia permisiva (pypdfium2, pdfplumber), a costa de rendimiento y de la salida en Markdown.
 
 ## Plataforma (igual en los cuatro servicios)
 

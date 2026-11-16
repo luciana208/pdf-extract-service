@@ -10,7 +10,6 @@ dependencies = [
     "httpx>=0.28",
     "pydantic-settings>=2.16",
     "pymupdf>=2.1",
-    "pymupdf4llm>=2.1",
     "python-multipart>=0.0.27",
 ]
 
