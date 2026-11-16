@@ -40,6 +40,31 @@ def build_pdf(pages: list[str] | None = None, padding: int = 0) -> bytes:
     return bytes(out)
 
 
+def build_pdf_with_title(title: str, body: str, title_size: int = 20, body_size: int = 12) -> bytes:
+    """pdf de una pagina con un titulo en letra grande y un parrafo de cuerpo debajo"""
+    stream = (
+        f"BT /F1 {title_size} Tf 72 720 Td ({_escape(title)}) Tj ET "
+        f"BT /F1 {body_size} Tf 72 660 Td ({_escape(body)}) Tj ET"
+    ).encode("latin-1")
+    objects = [
+        b"<</Type/Catalog/Pages 2 0 R>>",
+        b"<</Type/Pages/Kids[4 0 R]/Count 1>>",
+        b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+        b"<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 5 0 R/Resources<</Font<</F1 3 0 R>>>>>>",
+        b"<</Length %d>>stream\n" % len(stream) + stream + b"\nendstream",
+    ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for number, obj in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += b"%d 0 obj" % number + obj + b"endobj\n"
+    xref_position = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    out += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    out += b"trailer<</Size %d/Root 1 0 R>>\nstartxref\n%d\n%%%%EOF" % (len(objects) + 1, xref_position)
+    return bytes(out)
+
+
 TEXT_PDF = build_pdf(["Hola Mundo PDF"])
 NOT_A_PDF = b"PK\x03\x04 esto es un zip renombrado"
 CORRUPT_PDF = b"%PDF-1.4\nbasura que no es un pdf"
